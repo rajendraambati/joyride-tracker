@@ -6,6 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { routes, getStudentsByBus, trips } from "@/data/mockData";
 import { MapPin, Users, Navigation, Clock } from "lucide-react";
+import BusMap from "@/components/BusMap";
 
 export default function DriverHome() {
   const [onDuty, setOnDuty] = useState(true);
@@ -49,12 +50,13 @@ export default function DriverHome() {
       <Card>
         <CardHeader><CardTitle className="text-base">Navigation — {route.name}</CardTitle></CardHeader>
         <CardContent>
-          <div className="h-48 rounded-xl bg-muted flex items-center justify-center text-muted-foreground border-2 border-dashed border-border">
-            <div className="text-center space-y-1">
-              <Navigation className="h-8 w-8 mx-auto opacity-40" />
-              <p className="text-sm font-medium">Google Maps Navigation</p>
-            </div>
-          </div>
+          <BusMap
+            height="192px"
+            center={{ lat: route.stops[0].lat, lng: route.stops[0].lng }}
+            zoom={13}
+            markers={route.stops.map(s => ({ id: s.id, position: { lat: s.lat, lng: s.lng }, label: String(s.order), color: "#2563eb" }))}
+            routePath={route.stops.map(s => ({ lat: s.lat, lng: s.lng }))}
+          />
         </CardContent>
       </Card>
 

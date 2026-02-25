@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { buses, drivers, students, trips, messages, getDriverById, getRouteById } from "@/data/mockData";
+import { buses, drivers, students, trips, messages, getDriverById, getRouteById, routes } from "@/data/mockData";
 import { Bus, Users, GraduationCap, MapPin, AlertTriangle, Clock } from "lucide-react";
+import BusMap from "@/components/BusMap";
 
 const stats = [
   { label: "Total Buses", value: buses.length, icon: Bus, color: "text-primary" },
@@ -37,13 +38,14 @@ export default function AdminDashboard() {
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle className="text-base">Live Bus Map</CardTitle></CardHeader>
           <CardContent>
-            <div className="h-80 rounded-xl bg-muted flex items-center justify-center text-muted-foreground border-2 border-dashed border-border">
-              <div className="text-center space-y-2">
-                <MapPin className="h-10 w-10 mx-auto opacity-40" />
-                <p className="font-medium">Google Maps Integration</p>
-                <p className="text-sm">Map will display live bus positions</p>
-              </div>
-            </div>
+            <BusMap
+              height="320px"
+              markers={buses.filter(b => b.status === "active").map((b) => {
+                const route = routes.find(r => r.id === b.routeId);
+                const pos = route?.stops[1] || route?.stops[0];
+                return { id: b.id, position: { lat: pos?.lat || 12.94, lng: pos?.lng || 77.62 }, label: b.name.replace("Bus ", ""), color: "#2563eb" };
+              })}
+            />
           </CardContent>
         </Card>
 

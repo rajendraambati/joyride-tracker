@@ -5,8 +5,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { routes, getBusById } from "@/data/mockData";
-import { Plus, MapPin } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useState } from "react";
+import BusMap from "@/components/BusMap";
 
 export default function AdminRoutes() {
   const [open, setOpen] = useState(false);
@@ -59,13 +60,13 @@ export default function AdminRoutes() {
 
         <Card>
           <CardContent className="p-6">
-            <div className="h-72 rounded-xl bg-muted flex items-center justify-center text-muted-foreground border-2 border-dashed border-border">
-              <div className="text-center space-y-2">
-                <MapPin className="h-8 w-8 mx-auto opacity-40" />
-                <p className="font-medium">Route Map</p>
-                <p className="text-sm">Google Maps route visualization</p>
-              </div>
-            </div>
+            <BusMap
+              height="288px"
+              markers={routes.flatMap(r => r.stops.map(s => ({
+                id: s.id, position: { lat: s.lat, lng: s.lng }, label: String(s.order), color: "#2563eb"
+              })))}
+              routePath={routes[0]?.stops.map(s => ({ lat: s.lat, lng: s.lng }))}
+            />
           </CardContent>
         </Card>
       </div>
