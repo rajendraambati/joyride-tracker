@@ -14,6 +14,104 @@ export type Database = {
   }
   public: {
     Tables: {
+      buses: {
+        Row: {
+          capacity: number
+          created_at: string
+          driver_id: string | null
+          id: string
+          name: string
+          registration_number: string
+          route_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          name: string
+          registration_number: string
+          route_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          name?: string
+          registration_number?: string
+          route_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_buses_driver"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_buses_route"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drivers: {
+        Row: {
+          bus_id: string | null
+          created_at: string
+          duty_status: string
+          email: string
+          id: string
+          license_number: string
+          name: string
+          phone: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          bus_id?: string | null
+          created_at?: string
+          duty_status?: string
+          email: string
+          id?: string
+          license_number?: string
+          name: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          bus_id?: string | null
+          created_at?: string
+          duty_status?: string
+          email?: string
+          id?: string
+          license_number?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_drivers_bus"
+            columns: ["bus_id"]
+            isOneToOne: false
+            referencedRelation: "buses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
@@ -49,6 +147,132 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      route_stops: {
+        Row: {
+          created_at: string
+          estimated_time: string | null
+          id: string
+          lat: number
+          lng: number
+          name: string
+          route_id: string
+          stop_order: number
+        }
+        Insert: {
+          created_at?: string
+          estimated_time?: string | null
+          id?: string
+          lat: number
+          lng: number
+          name: string
+          route_id: string
+          stop_order?: number
+        }
+        Update: {
+          created_at?: string
+          estimated_time?: string | null
+          id?: string
+          lat?: number
+          lng?: number
+          name?: string
+          route_id?: string
+          stop_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_stops_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routes: {
+        Row: {
+          bus_id: string | null
+          created_at: string
+          destination: string
+          id: string
+          name: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          bus_id?: string | null
+          created_at?: string
+          destination?: string
+          id?: string
+          name: string
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          bus_id?: string | null
+          created_at?: string
+          destination?: string
+          id?: string
+          name?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_routes_bus"
+            columns: ["bus_id"]
+            isOneToOne: false
+            referencedRelation: "buses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          bus_id: string | null
+          created_at: string
+          drop_location: string | null
+          id: string
+          is_absent: boolean
+          name: string
+          parent_id: string | null
+          pickup_location: string | null
+          standard: string
+          updated_at: string
+        }
+        Insert: {
+          bus_id?: string | null
+          created_at?: string
+          drop_location?: string | null
+          id?: string
+          is_absent?: boolean
+          name: string
+          parent_id?: string | null
+          pickup_location?: string | null
+          standard?: string
+          updated_at?: string
+        }
+        Update: {
+          bus_id?: string | null
+          created_at?: string
+          drop_location?: string | null
+          id?: string
+          is_absent?: boolean
+          name?: string
+          parent_id?: string | null
+          pickup_location?: string | null
+          standard?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_students_bus"
+            columns: ["bus_id"]
+            isOneToOne: false
+            referencedRelation: "buses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
