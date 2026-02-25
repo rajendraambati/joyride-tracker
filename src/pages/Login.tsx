@@ -1,47 +1,59 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { UserRole } from "@/data/mockData";
+import { useAuth, UserRole } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Bus, Shield, User, Truck } from "lucide-react";
+import { Bus, Shield, User, Truck, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
-const defaultCredentials: Record<UserRole, { email: string; password: string }> = {
-  admin: { email: "admin@school.com", password: "admin123" },
-  parent: { email: "anita@email.com", password: "parent123" },
-  driver: { email: "rajesh@school.com", password: "driver123" },
-};
-
-const roles: { value: UserRole; label: string; icon: React.ReactNode; desc: string }[] = [
-  { value: "admin", label: "Administrator", icon: <Shield className="h-6 w-6" />, desc: "Manage buses, drivers & students" },
-  { value: "parent", label: "Parent", icon: <User className="h-6 w-6" />, desc: "Track your child's bus" },
-  { value: "driver", label: "Driver", icon: <Truck className="h-6 w-6" />, desc: "Navigate routes & manage trips" },
+const roles: { value: UserRole; label: string; icon: React.ReactNode }[] = [
+  { value: "admin", label: "Administrator", icon: <Shield className="h-6 w-6" /> },
+  { value: "parent", label: "Parent", icon: <User className="h-6 w-6" /> },
+  { value: "driver", label: "Driver", icon: <Truck className="h-6 w-6" /> },
 ];
 
-const Login = () => {
-  const [selectedRole, setSelectedRole] = useState<UserRole>("admin");
-  const [email, setEmail] = useState(defaultCredentials["admin"].email);
-  const [password, setPassword] = useState(defaultCredentials["admin"].password);
-  const { login } = useAuth();
-  const navigate = useNavigate();
+const redirectMap: Record<UserRole, string> = {
+  admin: "/admin",
+  parent: "/parent",
+  driver: "/driver",
+};
 
-  const handleLogin = (e: React.FormEvent) => {
+const Login = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { login, user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user?.role) {
+      navigate(redirectMap[user.role], { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(selectedRole);
-    const redirectMap: Record<UserRole, string> = {
-      admin: "/admin",
-      parent: "/parent",
-      driver: "/driver",
-    };
-    navigate(redirectMap[selectedRole]);
+    if (!email || !password) {
+      toast({ title: "Please enter email and password", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    const result = await login(email, password);
+    setLoading(false);
+
+    if (result.error) {
+      toast({ title: "Login failed", description: result.error, variant: "destructive" });
+    }
+    // Redirect will happen via useEffect when user state updates
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-accent/10 p-4">
       <div className="w-full max-w-md space-y-6">
-        {/* Logo */}
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary text-primary-foreground shadow-lg">
             <Bus className="h-8 w-8" />
@@ -53,67 +65,32 @@ const Login = () => {
         <Card className="shadow-xl border-0">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg">Sign In</CardTitle>
-            <CardDescription>Select your role and enter credentials</CardDescription>
+            <CardDescription>Enter your credentials to continue</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-5">
-              {/* Role Selection */}
-              <div className="grid grid-cols-3 gap-2">
-                {roles.map((r) => (
-                  <button
-                    key={r.value}
-                    type="button"
-                    onClick={() => {
-                      setSelectedRole(r.value);
-                      setEmail(defaultCredentials[r.value].email);
-                      setPassword(defaultCredentials[r.value].password);
-                    }}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center ${
-                      selectedRole === r.value
-                        ? "border-primary bg-primary/5 text-primary"
-                        : "border-border hover:border-primary/30 text-muted-foreground"
-                    }`}
-                  >
-                    {r.icon}
-                    <span className="text-xs font-semibold">{r.label}</span>
-                  </button>
-                ))}
-              </div>
-
               <div className="space-y-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@school.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
+                  <Input id="email" type="email" placeholder="you@school.com" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
+                  <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
               </div>
 
-              <Button type="submit" className="w-full h-11 text-base font-semibold">
-                Sign In as {roles.find((r) => r.value === selectedRole)?.label}
+              <Button type="submit" className="w-full h-11 text-base font-semibold" disabled={loading}>
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Sign In
               </Button>
 
               <div className="rounded-lg bg-muted p-3 space-y-1">
-                <p className="text-xs font-semibold text-muted-foreground text-center">Demo Credentials</p>
-                <div className="grid grid-cols-3 gap-2 text-[10px] text-muted-foreground">
-                  <div className="text-center"><p className="font-bold">Admin</p><p>admin@school.com</p><p>admin123</p></div>
-                  <div className="text-center"><p className="font-bold">Parent</p><p>anita@email.com</p><p>parent123</p></div>
-                  <div className="text-center"><p className="font-bold">Driver</p><p>rajesh@school.com</p><p>driver123</p></div>
+                <p className="text-xs font-semibold text-muted-foreground text-center">Admin Credentials</p>
+                <div className="text-center text-[11px] text-muted-foreground">
+                  <p>admin@school.com / admin123</p>
                 </div>
+                <p className="text-[10px] text-center text-muted-foreground mt-1">Parent & driver accounts are created by the admin</p>
               </div>
             </form>
           </CardContent>
