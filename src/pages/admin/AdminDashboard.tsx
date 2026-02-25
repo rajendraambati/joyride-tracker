@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Bus, Users, GraduationCap, MapPin, Loader2 } from "lucide-react";
@@ -9,24 +9,37 @@ export default function AdminDashboard() {
   const [counts, setCounts] = useState({ buses: 0, drivers: 0, students: 0, routes: 0 });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchCounts = async () => {
-      const [b, d, s, r] = await Promise.all([
-        supabase.from("buses").select("id", { count: "exact", head: true }),
-        supabase.from("drivers").select("id", { count: "exact", head: true }),
-        supabase.from("students").select("id", { count: "exact", head: true }),
-        supabase.from("routes").select("id", { count: "exact", head: true }),
-      ]);
-      setCounts({
-        buses: b.count ?? 0,
-        drivers: d.count ?? 0,
-        students: s.count ?? 0,
-        routes: r.count ?? 0,
-      });
-      setLoading(false);
-    };
-    fetchCounts();
+  const fetchCounts = useCallback(async () => {
+    const [b, d, s, r] = await Promise.all([
+      supabase.from("buses").select("id", { count: "exact", head: true }),
+      supabase.from("drivers").select("id", { count: "exact", head: true }),
+      supabase.from("students").select("id", { count: "exact", head: true }),
+      supabase.from("routes").select("id", { count: "exact", head: true }),
+    ]);
+    setCounts({
+      buses: b.count ?? 0,
+      drivers: d.count ?? 0,
+      students: s.count ?? 0,
+      routes: r.count ?? 0,
+    });
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchCounts();
+
+    const channel = supabase
+      .channel("dashboard-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "buses" }, () => fetchCounts())
+      .on("postgres_changes", { event: "*", schema: "public", table: "drivers" }, () => fetchCounts())
+      .on("postgres_changes", { event: "*", schema: "public", table: "students" }, () => fetchCounts())
+      .on("postgres_changes", { event: "*", schema: "public", table: "routes" }, () => fetchCounts())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchCounts]);
 
   const stats = [
     { label: "Total Buses", value: counts.buses, icon: Bus, color: "text-primary" },
