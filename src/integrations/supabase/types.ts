@@ -259,6 +259,7 @@ export type Database = {
           bus_id: string | null
           created_at: string
           drop_location: string | null
+          enrollment_status: string
           id: string
           is_absent: boolean
           name: string
@@ -271,6 +272,7 @@ export type Database = {
           bus_id?: string | null
           created_at?: string
           drop_location?: string | null
+          enrollment_status?: string
           id?: string
           is_absent?: boolean
           name: string
@@ -283,6 +285,7 @@ export type Database = {
           bus_id?: string | null
           created_at?: string
           drop_location?: string | null
+          enrollment_status?: string
           id?: string
           is_absent?: boolean
           name?: string
