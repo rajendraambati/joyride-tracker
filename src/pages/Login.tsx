@@ -8,6 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Bus, Shield, User, Truck } from "lucide-react";
 
+const defaultCredentials: Record<UserRole, { email: string; password: string }> = {
+  admin: { email: "admin@school.com", password: "admin123" },
+  parent: { email: "anita@email.com", password: "parent123" },
+  driver: { email: "rajesh@school.com", password: "driver123" },
+};
+
 const roles: { value: UserRole; label: string; icon: React.ReactNode; desc: string }[] = [
   { value: "admin", label: "Administrator", icon: <Shield className="h-6 w-6" />, desc: "Manage buses, drivers & students" },
   { value: "parent", label: "Parent", icon: <User className="h-6 w-6" />, desc: "Track your child's bus" },
@@ -16,8 +22,8 @@ const roles: { value: UserRole; label: string; icon: React.ReactNode; desc: stri
 
 const Login = () => {
   const [selectedRole, setSelectedRole] = useState<UserRole>("admin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(defaultCredentials["admin"].email);
+  const [password, setPassword] = useState(defaultCredentials["admin"].password);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -57,7 +63,11 @@ const Login = () => {
                   <button
                     key={r.value}
                     type="button"
-                    onClick={() => setSelectedRole(r.value)}
+                    onClick={() => {
+                      setSelectedRole(r.value);
+                      setEmail(defaultCredentials[r.value].email);
+                      setPassword(defaultCredentials[r.value].password);
+                    }}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center ${
                       selectedRole === r.value
                         ? "border-primary bg-primary/5 text-primary"
@@ -97,9 +107,14 @@ const Login = () => {
                 Sign In as {roles.find((r) => r.value === selectedRole)?.label}
               </Button>
 
-              <p className="text-xs text-center text-muted-foreground">
-                Demo mode — any credentials will work
-              </p>
+              <div className="rounded-lg bg-muted p-3 space-y-1">
+                <p className="text-xs font-semibold text-muted-foreground text-center">Demo Credentials</p>
+                <div className="grid grid-cols-3 gap-2 text-[10px] text-muted-foreground">
+                  <div className="text-center"><p className="font-bold">Admin</p><p>admin@school.com</p><p>admin123</p></div>
+                  <div className="text-center"><p className="font-bold">Parent</p><p>anita@email.com</p><p>parent123</p></div>
+                  <div className="text-center"><p className="font-bold">Driver</p><p>rajesh@school.com</p><p>driver123</p></div>
+                </div>
+              </div>
             </form>
           </CardContent>
         </Card>
