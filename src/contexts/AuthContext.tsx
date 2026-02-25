@@ -28,27 +28,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const loadUserProfile = async (sbUser: SupabaseUser) => {
-    // Get profile
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", sbUser.id)
-      .single();
+    try {
+      const [profileRes, roleRes] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", sbUser.id).single(),
+        supabase.from("user_roles").select("role").eq("user_id", sbUser.id).single(),
+      ]);
 
-    // Get role
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", sbUser.id)
-      .single();
-
-    if (profile && roleData) {
-      setUser({
-        id: sbUser.id,
-        name: profile.name,
-        email: profile.email,
-        role: roleData.role as UserRole,
-      });
+      if (profileRes.data && roleRes.data) {
+        setUser({
+          id: sbUser.id,
+          name: profileRes.data.name,
+          email: profileRes.data.email,
+          role: roleRes.data.role as UserRole,
+        });
+      } else {
+        console.error("Profile/role not found:", profileRes.error, roleRes.error);
+        setUser(null);
+      }
+    } catch (err) {
+      console.error("Error loading user profile:", err);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
     }
   };
 
