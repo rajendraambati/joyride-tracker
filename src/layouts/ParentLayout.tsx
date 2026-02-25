@@ -1,6 +1,7 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Home, MapPin, Users, MessageSquare, User, LogOut, Bus } from "lucide-react";
+import NotificationBell from "@/components/NotificationBell";
 
 const navItems = [
   { title: "Home", url: "/parent", icon: Home },
@@ -23,6 +24,7 @@ export default function ParentLayout() {
           <Bus className="h-4 w-4 text-primary-foreground" />
         </div>
         <h1 className="font-bold text-foreground flex-1">SchoolBus Tracker</h1>
+        <NotificationBell />
         <button onClick={() => { logout(); navigate("/login"); }} className="text-muted-foreground hover:text-foreground">
           <LogOut className="h-5 w-5" />
         </button>
