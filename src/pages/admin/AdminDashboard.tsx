@@ -1,22 +1,44 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { buses, drivers, students, trips, messages, getDriverById, getRouteById, routes } from "@/data/mockData";
-import { Bus, Users, GraduationCap, MapPin, AlertTriangle, Clock } from "lucide-react";
+import { Bus, Users, GraduationCap, MapPin, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import BusMap from "@/components/BusMap";
 
-const stats = [
-  { label: "Total Buses", value: buses.length, icon: Bus, color: "text-primary" },
-  { label: "Active Trips", value: trips.filter(t => t.status === "in-progress").length, icon: MapPin, color: "text-green-600" },
-  { label: "Total Students", value: students.length, icon: GraduationCap, color: "text-amber-600" },
-  { label: "Total Drivers", value: drivers.length, icon: Users, color: "text-purple-600" },
-];
-
 export default function AdminDashboard() {
-  const activeTrips = trips.filter(t => t.status === "in-progress");
+  const [counts, setCounts] = useState({ buses: 0, drivers: 0, students: 0, routes: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      const [b, d, s, r] = await Promise.all([
+        supabase.from("buses").select("id", { count: "exact", head: true }),
+        supabase.from("drivers").select("id", { count: "exact", head: true }),
+        supabase.from("students").select("id", { count: "exact", head: true }),
+        supabase.from("routes").select("id", { count: "exact", head: true }),
+      ]);
+      setCounts({
+        buses: b.count ?? 0,
+        drivers: d.count ?? 0,
+        students: s.count ?? 0,
+        routes: r.count ?? 0,
+      });
+      setLoading(false);
+    };
+    fetchCounts();
+  }, []);
+
+  const stats = [
+    { label: "Total Buses", value: counts.buses, icon: Bus, color: "text-primary" },
+    { label: "Total Routes", value: counts.routes, icon: MapPin, color: "text-green-600" },
+    { label: "Total Students", value: counts.students, icon: GraduationCap, color: "text-amber-600" },
+    { label: "Total Drivers", value: counts.drivers, icon: Users, color: "text-purple-600" },
+  ];
+
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s) => (
           <Card key={s.label}>
@@ -33,66 +55,26 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Map placeholder + Activity feed */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle className="text-base">Live Bus Map</CardTitle></CardHeader>
           <CardContent>
-            <BusMap
-              height="320px"
-              markers={buses.filter(b => b.status === "active").map((b) => {
-                const route = routes.find(r => r.id === b.routeId);
-                const pos = route?.stops[1] || route?.stops[0];
-                return { id: b.id, position: { lat: pos?.lat || 12.94, lng: pos?.lng || 77.62 }, label: b.name.replace("Bus ", ""), color: "#2563eb" };
-              })}
-            />
+            <BusMap height="320px" markers={[]} />
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Active Trips</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Quick Overview</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            {activeTrips.length === 0 && <p className="text-sm text-muted-foreground">No active trips</p>}
-            {activeTrips.map((trip) => {
-              const driver = getDriverById(trip.driverId);
-              const route = getRouteById(trip.routeId);
-              return (
-                <div key={trip.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                  <div className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center mt-0.5">
-                    <Bus className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{route?.name}</p>
-                    <p className="text-xs text-muted-foreground">{driver?.name} • Started {trip.startTime}</p>
-                  </div>
-                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">Live</Badge>
-                </div>
-              );
-            })}
+            <p className="text-sm text-muted-foreground">
+              You have {counts.buses} buses, {counts.drivers} drivers, {counts.students} students, and {counts.routes} routes configured.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Use the sidebar to manage each entity. Add buses and routes first, then assign drivers and students.
+            </p>
           </CardContent>
         </Card>
       </div>
-
-      {/* Recent Messages */}
-      <Card>
-        <CardHeader><CardTitle className="text-base">Recent Messages</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          {messages.slice(0, 4).map((msg) => (
-            <div key={msg.id} className={`flex items-start gap-3 p-3 rounded-lg ${msg.isEmergency ? "bg-destructive/5 border border-destructive/20" : "bg-muted/50"}`}>
-              {msg.isEmergency ? (
-                <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
-              ) : (
-                <Clock className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">{msg.subject}</p>
-                <p className="text-xs text-muted-foreground">{msg.from} • {msg.timestamp}</p>
-              </div>
-              {!msg.read && <Badge className="text-xs">New</Badge>}
-            </div>
-          ))}
-        </CardContent>
-      </Card>
     </div>
   );
 }
