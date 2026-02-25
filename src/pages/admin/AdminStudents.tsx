@@ -24,13 +24,19 @@ export default function AdminStudents() {
   const [saving, setSaving] = useState(false);
 
   const fetchData = async () => {
-    const [studentsRes, parentsRes] = await Promise.all([
+    const [studentsRes, profilesRes, rolesRes] = await Promise.all([
       supabase.from("students").select("*, buses!fk_students_bus(name)").order("created_at", { ascending: false }),
-      supabase.from("profiles").select("*, user_roles(role)").order("created_at", { ascending: false }),
+      supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+      supabase.from("user_roles").select("user_id, role"),
     ]);
     if (studentsRes.error) toast.error(studentsRes.error.message);
     setStudents(studentsRes.data ?? []);
-    const parentProfiles = (parentsRes.data ?? []).filter((p: any) => p.user_roles?.role === "parent");
+
+    // Build a set of parent user_ids
+    const parentUserIds = new Set(
+      (rolesRes.data ?? []).filter((r: any) => r.role === "parent").map((r: any) => r.user_id)
+    );
+    const parentProfiles = (profilesRes.data ?? []).filter((p: any) => parentUserIds.has(p.user_id));
     setParents(parentProfiles);
     setLoading(false);
   };
