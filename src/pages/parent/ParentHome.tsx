@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { trips, buses, drivers, routes, notifications, getDriverById, getBusById, getRouteById } from "@/data/mockData";
 import { MapPin, Clock, Bell, Bus } from "lucide-react";
+import BusMap from "@/components/BusMap";
 
 export default function ParentHome() {
   // Mock: parent p1's child is on bus b1
@@ -63,13 +64,13 @@ export default function ParentHome() {
       <Card>
         <CardHeader><CardTitle className="text-base">Live Bus Location</CardTitle></CardHeader>
         <CardContent>
-          <div className="h-56 rounded-xl bg-muted flex items-center justify-center text-muted-foreground border-2 border-dashed border-border">
-            <div className="text-center space-y-1">
-              <MapPin className="h-8 w-8 mx-auto opacity-40" />
-              <p className="text-sm font-medium">Google Maps</p>
-              <p className="text-xs">Live bus position & ETA</p>
-            </div>
-          </div>
+          <BusMap
+            height="224px"
+            center={route ? { lat: route.stops[1]?.lat || 12.94, lng: route.stops[1]?.lng || 77.62 } : undefined}
+            zoom={14}
+            markers={[{ id: "bus1", position: { lat: route?.stops[1]?.lat || 12.94, lng: route?.stops[1]?.lng || 77.62 }, label: "🚌", color: "#2563eb" }]}
+            routePath={route?.stops.map(s => ({ lat: s.lat, lng: s.lng }))}
+          />
         </CardContent>
       </Card>
 
