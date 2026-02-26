@@ -95,7 +95,7 @@ export default function BusMap({
         />
       ))}
 
-      {routePath && routePath.length > 1 && (
+      {routePath && routePath.length > 1 && mapRef.current && (
         <Polyline
           path={routePath}
           options={{
