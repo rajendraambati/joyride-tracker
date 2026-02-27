@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import {
   LayoutDashboard, Bus, Users, GraduationCap, Route, MessageSquare,
-  DollarSign, BarChart3, Settings, LogOut, Menu
+  DollarSign, BarChart3, Settings, LogOut, Menu, Eye
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -20,6 +20,7 @@ const navItems = [
   { title: "Routes", url: "/admin/routes", icon: Route },
   { title: "Messages", url: "/admin/messages", icon: MessageSquare },
   { title: "Bus Fare", url: "/admin/fare", icon: DollarSign },
+  { title: "Drowsiness", url: "/admin/drowsiness", icon: Eye },
   { title: "Reports", url: "/admin/reports", icon: BarChart3 },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];

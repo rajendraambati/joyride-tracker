@@ -1,10 +1,11 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Home, FileText, LogOut, Bus } from "lucide-react";
+import { Home, FileText, LogOut, Bus, Eye } from "lucide-react";
 
 const navItems = [
   { title: "Home", url: "/driver", icon: Home },
-  { title: "Trip & Messages", url: "/driver/trip", icon: FileText },
+  { title: "Trip", url: "/driver/trip", icon: FileText },
+  { title: "Drowsiness", url: "/driver/drowsiness", icon: Eye },
 ];
 
 export default function DriverLayout() {
