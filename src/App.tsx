@@ -30,6 +30,8 @@ import ParentProfile from "./pages/parent/ParentProfile";
 import DriverLayout from "./layouts/DriverLayout";
 import DriverHome from "./pages/driver/DriverHome";
 import DriverTrip from "./pages/driver/DriverTrip";
+import DriverDrowsiness from "./pages/driver/DriverDrowsiness";
+import AdminDrowsiness from "./pages/admin/AdminDrowsiness";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +57,7 @@ const App = () => (
                 <Route path="/admin/messages" element={<AdminMessages />} />
                 <Route path="/admin/fare" element={<AdminFare />} />
                 <Route path="/admin/reports" element={<AdminReports />} />
+                <Route path="/admin/drowsiness" element={<AdminDrowsiness />} />
                 <Route path="/admin/settings" element={<AdminSettings />} />
               </Route>
             </Route>
@@ -75,6 +78,7 @@ const App = () => (
               <Route element={<DriverLayout />}>
                 <Route path="/driver" element={<DriverHome />} />
                 <Route path="/driver/trip" element={<DriverTrip />} />
+                <Route path="/driver/drowsiness" element={<DriverDrowsiness />} />
               </Route>
             </Route>
 

@@ -112,6 +112,54 @@ export type Database = {
           },
         ]
       }
+      drowsiness_alerts: {
+        Row: {
+          bus_id: string | null
+          created_at: string
+          driver_id: string | null
+          id: string
+          left_eye: string
+          right_eye: string
+          score: number
+          status: string
+        }
+        Insert: {
+          bus_id?: string | null
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          left_eye?: string
+          right_eye?: string
+          score?: number
+          status?: string
+        }
+        Update: {
+          bus_id?: string | null
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          left_eye?: string
+          right_eye?: string
+          score?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drowsiness_alerts_bus_id_fkey"
+            columns: ["bus_id"]
+            isOneToOne: false
+            referencedRelation: "buses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drowsiness_alerts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
