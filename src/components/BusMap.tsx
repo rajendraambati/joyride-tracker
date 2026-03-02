@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Polyline, useMap } from "react-leaflet";
+import { useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -14,8 +14,8 @@ export interface BusMarker {
 }
 
 export interface RouteInfo {
-  distance: number; // meters
-  duration: number; // seconds
+  distance: number;
+  duration: number;
   steps: { instruction: string; distance: number; duration: number }[];
 }
 
@@ -28,6 +28,7 @@ interface MapProps {
   useRouting?: boolean;
   className?: string;
   onRouteInfo?: (info: RouteInfo) => void;
+  onMapClick?: (latlng: { lat: number; lng: number }) => void;
 }
 
 function createIcon(color = "#2563eb", label?: string) {
@@ -35,12 +36,7 @@ function createIcon(color = "#2563eb", label?: string) {
     <circle cx="14" cy="14" r="12" fill="${color}" stroke="#fff" stroke-width="2"/>
     ${label ? `<text x="14" y="18" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold" font-family="sans-serif">${label}</text>` : ""}
   </svg>`;
-  return L.divIcon({
-    html: svg,
-    className: "",
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-  });
+  return L.divIcon({ html: svg, className: "", iconSize: [28, 28], iconAnchor: [14, 14] });
 }
 
 function FitBounds({ markers, routePath }: { markers: BusMarker[]; routePath?: [number, number][] }) {
@@ -57,6 +53,15 @@ function FitBounds({ markers, routePath }: { markers: BusMarker[]; routePath?: [
   return null;
 }
 
+function ClickHandler({ onClick }: { onClick: (latlng: { lat: number; lng: number }) => void }) {
+  useMapEvents({
+    click(e) {
+      onClick({ lat: e.latlng.lat, lng: e.latlng.lng });
+    },
+  });
+  return null;
+}
+
 export default function BusMap({
   height = "320px",
   center,
@@ -66,6 +71,7 @@ export default function BusMap({
   useRouting = false,
   className = "",
   onRouteInfo,
+  onMapClick,
 }: MapProps) {
   const [routeLine, setRouteLine] = useState<[number, number][] | null>(null);
   const mapCenter: [number, number] = center ? [center.lat, center.lng] : DEFAULT_CENTER;
@@ -79,7 +85,6 @@ export default function BusMap({
       setRouteLine(null);
       return;
     }
-
     const waypoints = routePath.map((p) => `${p.lat},${p.lng}`).join("|");
     const url = `https://api.geoapify.com/v1/routing?waypoints=${encodeURIComponent(waypoints)}&mode=drive&apiKey=${GEOAPIFY_KEY}`;
 
@@ -92,27 +97,17 @@ export default function BusMap({
             .flat(feature.geometry.type === "MultiLineString" ? 1 : 0)
             .map((c: number[]) => [c[1], c[0]] as [number, number]);
           setRouteLine(coords);
-
-          // Extract route info
           if (onRouteInfo) {
             const props = feature.properties;
             const steps: RouteInfo["steps"] = [];
             if (props.legs) {
               for (const leg of props.legs) {
                 for (const step of leg.steps ?? []) {
-                  steps.push({
-                    instruction: step.instruction?.text ?? "",
-                    distance: step.distance ?? 0,
-                    duration: step.time ?? 0,
-                  });
+                  steps.push({ instruction: step.instruction?.text ?? "", distance: step.distance ?? 0, duration: step.time ?? 0 });
                 }
               }
             }
-            onRouteInfo({
-              distance: props.distance ?? 0,
-              duration: props.time ?? 0,
-              steps,
-            });
+            onRouteInfo({ distance: props.distance ?? 0, duration: props.time ?? 0, steps });
           }
         }
       })
@@ -128,33 +123,18 @@ export default function BusMap({
 
   return (
     <div className={`rounded-xl overflow-hidden ${className}`} style={{ height }}>
-      <MapContainer
-        center={mapCenter}
-        zoom={zoom}
-        style={{ width: "100%", height: "100%" }}
-        scrollWheelZoom
-        attributionControl={false}
-      >
+      <MapContainer center={mapCenter} zoom={zoom} style={{ width: "100%", height: "100%" }} scrollWheelZoom attributionControl={false}>
         <TileLayer
           url={`https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_KEY}`}
           attribution='&copy; <a href="https://www.geoapify.com/">Geoapify</a>'
         />
-
         <FitBounds markers={markers} routePath={displayPath} />
-
+        {onMapClick && <ClickHandler onClick={onMapClick} />}
         {markers.map((m) => (
-          <Marker
-            key={m.id}
-            position={[m.position.lat, m.position.lng]}
-            icon={createIcon(m.color, m.label)}
-          />
+          <Marker key={m.id} position={[m.position.lat, m.position.lng]} icon={createIcon(m.color, m.label)} />
         ))}
-
         {displayPath && displayPath.length > 1 && (
-          <Polyline
-            positions={displayPath}
-            pathOptions={{ color: "#2563eb", weight: 4, opacity: 0.8 }}
-          />
+          <Polyline positions={displayPath} pathOptions={{ color: "#2563eb", weight: 4, opacity: 0.8 }} />
         )}
       </MapContainer>
     </div>
