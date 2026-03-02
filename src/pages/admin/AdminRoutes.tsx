@@ -143,7 +143,7 @@ export default function AdminRoutes() {
 
         <Card>
           <CardContent className="p-6">
-            <BusMap height="288px" markers={allStops} routePath={firstRouteStops} />
+            <BusMap height="288px" markers={allStops} routePath={firstRouteStops} useRouting />
           </CardContent>
         </Card>
       </div>
