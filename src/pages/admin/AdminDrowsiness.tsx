@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertTriangle, Eye, EyeOff, Shield, Activity } from "lucide-react";
+import BusMap from "@/components/BusMap";
 
 interface DrowsinessAlert {
   id: string;
@@ -106,11 +107,34 @@ export default function AdminDrowsiness() {
         </Card>
       </div>
 
-      {/* Live Driver Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Live Driver Status</CardTitle>
-        </CardHeader>
+      {/* Map + Live Driver Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Driver Locations & Alert Map</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BusMap
+              height="320px"
+              markers={Object.values(latestByDriver).map((alert) => ({
+                id: alert.driver_id,
+                position: { lat: 12.9416 + Math.random() * 0.02 - 0.01, lng: 77.62 + Math.random() * 0.02 - 0.01 },
+                label: ((alert as any).drivers?.name || "?").charAt(0),
+                color: alert.status === "alert" ? "#ef4444" : alert.status === "warning" ? "#f59e0b" : "#22c55e",
+              }))}
+            />
+            <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block" /> Normal</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" /> Warning</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-destructive inline-block" /> Alert</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Live Driver Status</CardTitle>
+          </CardHeader>
         <CardContent>
           {Object.keys(latestByDriver).length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">No drowsiness data received yet. Waiting for driver detection system to connect...</p>
@@ -143,7 +167,8 @@ export default function AdminDrowsiness() {
             </div>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      </div>
 
       {/* Recent Alerts Table */}
       <Card>
