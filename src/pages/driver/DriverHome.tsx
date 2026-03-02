@@ -56,6 +56,7 @@ export default function DriverHome() {
             zoom={13}
             markers={route.stops.map(s => ({ id: s.id, position: { lat: s.lat, lng: s.lng }, label: String(s.order), color: "#2563eb" }))}
             routePath={route.stops.map(s => ({ lat: s.lat, lng: s.lng }))}
+            useRouting
           />
         </CardContent>
       </Card>
