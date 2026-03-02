@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Navigation, Clock, Ruler } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import BusMap from "@/components/BusMap";
+import BusMap, { RouteInfo } from "@/components/BusMap";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const emptyForm = { name: "", source: "", destination: "" };
 
@@ -20,6 +21,7 @@ export default function AdminRoutes() {
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
 
   const fetchRoutes = async () => {
     const { data, error } = await supabase
@@ -141,11 +143,49 @@ export default function AdminRoutes() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <BusMap height="288px" markers={allStops} routePath={firstRouteStops} useRouting />
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="p-4">
+              <BusMap height="288px" markers={allStops} routePath={firstRouteStops} useRouting onRouteInfo={setRouteInfo} />
+            </CardContent>
+          </Card>
+
+          {routeInfo && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Navigation className="h-4 w-4 text-primary" /> Route Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex gap-4 text-sm">
+                  <div className="flex items-center gap-1.5">
+                    <Ruler className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{(routeInfo.distance / 1000).toFixed(1)} km</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{Math.round(routeInfo.duration / 60)} min</span>
+                  </div>
+                </div>
+
+                {routeInfo.steps.length > 0 && (
+                  <ScrollArea className="h-48">
+                    <div className="space-y-1.5 pr-3">
+                      {routeInfo.steps.filter(s => s.instruction).map((step, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs p-2 rounded-md bg-muted/50">
+                          <span className="text-muted-foreground font-mono w-5 shrink-0">{i + 1}.</span>
+                          <span className="flex-1">{step.instruction}</span>
+                          <span className="text-muted-foreground shrink-0">{(step.distance / 1000).toFixed(1)}km</span>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );
