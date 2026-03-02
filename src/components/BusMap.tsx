@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -6,11 +6,17 @@ import "leaflet/dist/leaflet.css";
 const GEOAPIFY_KEY = "2c02f2a1336a49c193fb75f1ff86f803";
 const DEFAULT_CENTER: [number, number] = [12.9416, 77.62];
 
-interface BusMarker {
+export interface BusMarker {
   id: string;
   position: { lat: number; lng: number };
   label?: string;
   color?: string;
+}
+
+export interface RouteInfo {
+  distance: number; // meters
+  duration: number; // seconds
+  steps: { instruction: string; distance: number; duration: number }[];
 }
 
 interface MapProps {
@@ -21,6 +27,7 @@ interface MapProps {
   routePath?: { lat: number; lng: number }[];
   useRouting?: boolean;
   className?: string;
+  onRouteInfo?: (info: RouteInfo) => void;
 }
 
 function createIcon(color = "#2563eb", label?: string) {
@@ -58,11 +65,15 @@ export default function BusMap({
   routePath,
   useRouting = false,
   className = "",
+  onRouteInfo,
 }: MapProps) {
   const [routeLine, setRouteLine] = useState<[number, number][] | null>(null);
   const mapCenter: [number, number] = center ? [center.lat, center.lng] : DEFAULT_CENTER;
 
-  // Fetch route from Geoapify Routing API when useRouting is true
+  const stableRouteKey = routePath
+    ? routePath.map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join("|")
+    : "";
+
   useEffect(() => {
     if (!useRouting || !routePath || routePath.length < 2) {
       setRouteLine(null);
@@ -76,14 +87,37 @@ export default function BusMap({
       .then((r) => r.json())
       .then((data) => {
         if (data.features && data.features.length > 0) {
-          const coords: [number, number][] = data.features[0].geometry.coordinates
-            .flat(data.features[0].geometry.type === "MultiLineString" ? 1 : 0)
+          const feature = data.features[0];
+          const coords: [number, number][] = feature.geometry.coordinates
+            .flat(feature.geometry.type === "MultiLineString" ? 1 : 0)
             .map((c: number[]) => [c[1], c[0]] as [number, number]);
           setRouteLine(coords);
+
+          // Extract route info
+          if (onRouteInfo) {
+            const props = feature.properties;
+            const steps: RouteInfo["steps"] = [];
+            if (props.legs) {
+              for (const leg of props.legs) {
+                for (const step of leg.steps ?? []) {
+                  steps.push({
+                    instruction: step.instruction?.text ?? "",
+                    distance: step.distance ?? 0,
+                    duration: step.time ?? 0,
+                  });
+                }
+              }
+            }
+            onRouteInfo({
+              distance: props.distance ?? 0,
+              duration: props.time ?? 0,
+              steps,
+            });
+          }
         }
       })
       .catch(() => setRouteLine(null));
-  }, [useRouting, routePath]);
+  }, [stableRouteKey, useRouting]);
 
   const displayPath: [number, number][] | undefined =
     useRouting && routeLine
