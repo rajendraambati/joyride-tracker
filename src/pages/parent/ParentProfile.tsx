@@ -1,22 +1,53 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { fares, getStudentById, getStudentsByParent } from "@/data/mockData";
-import { User, CreditCard } from "lucide-react";
+import { User, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function ParentProfile() {
+  const { user } = useAuth();
   const { toast } = useToast();
-  const children = getStudentsByParent("p1");
-  const childFares = children.flatMap(c => fares.filter(f => f.studentId === c.id));
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "" });
 
-  const statusColors: Record<string, string> = {
-    paid: "bg-green-100 text-green-700",
-    unpaid: "bg-amber-100 text-amber-700",
-    overdue: "bg-red-100 text-red-700",
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setProfile(data);
+          setForm({ name: data.name, phone: data.phone || "", email: data.email, address: data.address || "" });
+        }
+        setLoading(false);
+      });
+  }, [user?.id]);
+
+  const handleSave = async () => {
+    if (!profile) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ name: form.name, phone: form.phone, address: form.address })
+      .eq("id", profile.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Failed to update", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Profile Updated" });
   };
+
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
 
   return (
     <div className="space-y-4 max-w-lg mx-auto">
@@ -25,36 +56,14 @@ export default function ParentProfile() {
       <Card>
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><User className="h-5 w-5 text-primary" /> Personal Details</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div><Label>Name</Label><Input defaultValue="Anita Sharma" /></div>
-          <div><Label>Phone</Label><Input defaultValue="+91 99876 54321" /></div>
-          <div><Label>Email</Label><Input defaultValue="anita@email.com" /></div>
-          <div><Label>Address</Label><Input defaultValue="12, MG Road, Bangalore" /></div>
-          <Button onClick={() => toast({ title: "Profile Updated" })}>Save Changes</Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><CreditCard className="h-5 w-5 text-primary" /> Bus Fare & Payment</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          {childFares.map((f) => {
-            const student = getStudentById(f.studentId);
-            return (
-              <div key={f.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <div>
-                  <p className="text-sm font-medium">{student?.name}</p>
-                  <p className="text-xs text-muted-foreground">{f.month} • ₹{f.amount}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className={statusColors[f.status]}>{f.status}</Badge>
-                  {f.status !== "paid" && (
-                    <Button size="sm" onClick={() => toast({ title: "Payment Initiated", description: "Mock payment gateway" })}>
-                      Pay
-                    </Button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          <div><Label>Name</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
+          <div><Label>Phone</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
+          <div><Label>Email</Label><Input value={form.email} disabled className="bg-muted" /></div>
+          <div><Label>Address</Label><Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
         </CardContent>
       </Card>
     </div>

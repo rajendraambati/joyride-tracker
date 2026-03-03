@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -36,58 +37,60 @@ import AdminDrowsiness from "./pages/admin/AdminDrowsiness";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/login" element={<Login />} />
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="/login" element={<Login />} />
 
-            {/* Admin Routes */}
-            <Route element={<ProtectedRoute allowedRole="admin" />}>
-              <Route element={<AdminLayout />}>
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/buses" element={<AdminBuses />} />
-                <Route path="/admin/drivers" element={<AdminDrivers />} />
-                <Route path="/admin/students" element={<AdminStudents />} />
-                <Route path="/admin/routes" element={<AdminRoutes />} />
-                <Route path="/admin/messages" element={<AdminMessages />} />
-                <Route path="/admin/fare" element={<AdminFare />} />
-                <Route path="/admin/reports" element={<AdminReports />} />
-                <Route path="/admin/drowsiness" element={<AdminDrowsiness />} />
-                <Route path="/admin/settings" element={<AdminSettings />} />
+              {/* Admin Routes */}
+              <Route element={<ProtectedRoute allowedRole="admin" />}>
+                <Route element={<AdminLayout />}>
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin/buses" element={<AdminBuses />} />
+                  <Route path="/admin/drivers" element={<AdminDrivers />} />
+                  <Route path="/admin/students" element={<AdminStudents />} />
+                  <Route path="/admin/routes" element={<AdminRoutes />} />
+                  <Route path="/admin/messages" element={<AdminMessages />} />
+                  <Route path="/admin/fare" element={<AdminFare />} />
+                  <Route path="/admin/reports" element={<AdminReports />} />
+                  <Route path="/admin/drowsiness" element={<AdminDrowsiness />} />
+                  <Route path="/admin/settings" element={<AdminSettings />} />
+                </Route>
               </Route>
-            </Route>
 
-            {/* Parent Routes */}
-            <Route element={<ProtectedRoute allowedRole="parent" />}>
-              <Route element={<ParentLayout />}>
-                <Route path="/parent" element={<ParentHome />} />
-                <Route path="/parent/trip" element={<ParentTrip />} />
-                <Route path="/parent/children" element={<ParentChildren />} />
-                <Route path="/parent/messages" element={<ParentMessages />} />
-                <Route path="/parent/profile" element={<ParentProfile />} />
+              {/* Parent Routes */}
+              <Route element={<ProtectedRoute allowedRole="parent" />}>
+                <Route element={<ParentLayout />}>
+                  <Route path="/parent" element={<ParentHome />} />
+                  <Route path="/parent/trip" element={<ParentTrip />} />
+                  <Route path="/parent/children" element={<ParentChildren />} />
+                  <Route path="/parent/messages" element={<ParentMessages />} />
+                  <Route path="/parent/profile" element={<ParentProfile />} />
+                </Route>
               </Route>
-            </Route>
 
-            {/* Driver Routes */}
-            <Route element={<ProtectedRoute allowedRole="driver" />}>
-              <Route element={<DriverLayout />}>
-                <Route path="/driver" element={<DriverHome />} />
-                <Route path="/driver/trip" element={<DriverTrip />} />
-                <Route path="/driver/drowsiness" element={<DriverDrowsiness />} />
+              {/* Driver Routes */}
+              <Route element={<ProtectedRoute allowedRole="driver" />}>
+                <Route element={<DriverLayout />}>
+                  <Route path="/driver" element={<DriverHome />} />
+                  <Route path="/driver/trip" element={<DriverTrip />} />
+                  <Route path="/driver/drowsiness" element={<DriverDrowsiness />} />
+                </Route>
               </Route>
-            </Route>
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
