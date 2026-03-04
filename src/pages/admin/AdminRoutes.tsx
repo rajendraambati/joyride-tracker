@@ -56,17 +56,64 @@ export default function AdminRoutes() {
     setOpen(true);
   };
 
+  const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
+    try {
+      const res = await fetch(
+        `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(address)}&limit=1&apiKey=2c02f2a1336a49c193fb75f1ff86f803`
+      );
+      const data = await res.json();
+      if (data.features && data.features.length > 0) {
+        const [lng, lat] = data.features[0].geometry.coordinates;
+        return { lat, lng };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
   const handleSave = async () => {
     if (!form.name) { toast.error("Route name is required"); return; }
     setSaving(true);
     const payload = { name: form.name, source: form.source, destination: form.destination };
-    const { error } = editId
-      ? await supabase.from("routes").update(payload).eq("id", editId)
-      : await supabase.from("routes").insert(payload);
+
+    let routeId = editId;
+    if (editId) {
+      const { error } = await supabase.from("routes").update(payload).eq("id", editId);
+      if (error) { toast.error(error.message); setSaving(false); return; }
+    } else {
+      const { data, error } = await supabase.from("routes").insert(payload).select("id").single();
+      if (error) { toast.error(error.message); setSaving(false); return; }
+      routeId = data.id;
+    }
+
+    // Auto-create source & destination stops when both are provided
+    if (form.source && form.destination && routeId) {
+      toast.info("Geocoding addresses & calculating route…");
+      const [srcCoord, dstCoord] = await Promise.all([
+        geocodeAddress(form.source),
+        geocodeAddress(form.destination),
+      ]);
+
+      if (srcCoord && dstCoord) {
+        // Remove existing auto-generated stops if editing
+        if (editId) {
+          await supabase.from("route_stops").delete().eq("route_id", routeId);
+        }
+        await supabase.from("route_stops").insert([
+          { route_id: routeId, name: form.source, lat: srcCoord.lat, lng: srcCoord.lng, stop_order: 1, estimated_time: "Start" },
+          { route_id: routeId, name: form.destination, lat: dstCoord.lat, lng: dstCoord.lng, stop_order: 2, estimated_time: "End" },
+        ]);
+        toast.success("Shortest driving route calculated!");
+      } else {
+        toast.warning("Could not geocode addresses – add stops manually on the map.");
+      }
+    }
+
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
     toast.success(editId ? "Route updated" : "Route added");
     setOpen(false);
+    setSelectedRouteId(routeId);
     fetchRoutes();
   };
 
