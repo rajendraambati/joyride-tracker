@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents, LayersControl } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 const GEOAPIFY_KEY = "2c02f2a1336a49c193fb75f1ff86f803";
+const TOMTOM_KEY = "jMFAMQfjG2gG6G2aHGA6YaMG2GzfpAbj";
 const DEFAULT_CENTER: [number, number] = [12.9416, 77.62];
 
 export interface BusMarker {
@@ -29,6 +30,7 @@ interface MapProps {
   className?: string;
   onRouteInfo?: (info: RouteInfo) => void;
   onMapClick?: (latlng: { lat: number; lng: number }) => void;
+  showTraffic?: boolean;
 }
 
 function createIcon(color = "#2563eb", label?: string) {
@@ -62,6 +64,20 @@ function ClickHandler({ onClick }: { onClick: (latlng: { lat: number; lng: numbe
   return null;
 }
 
+function TrafficLegend() {
+  return (
+    <div className="absolute bottom-4 left-4 z-[1000] rounded-lg bg-background/90 backdrop-blur-sm p-3 shadow-lg border border-border text-xs">
+      <p className="font-semibold text-foreground mb-1.5">Traffic Flow</p>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2"><span className="w-5 h-1.5 rounded" style={{ background: "#00b341" }} /> Free flow</div>
+        <div className="flex items-center gap-2"><span className="w-5 h-1.5 rounded" style={{ background: "#ffaa00" }} /> Moderate</div>
+        <div className="flex items-center gap-2"><span className="w-5 h-1.5 rounded" style={{ background: "#ff0000" }} /> Slow</div>
+        <div className="flex items-center gap-2"><span className="w-5 h-1.5 rounded" style={{ background: "#8b0000" }} /> Congested</div>
+      </div>
+    </div>
+  );
+}
+
 export default function BusMap({
   height = "320px",
   center,
@@ -72,8 +88,10 @@ export default function BusMap({
   className = "",
   onRouteInfo,
   onMapClick,
+  showTraffic = false,
 }: MapProps) {
   const [routeLine, setRouteLine] = useState<[number, number][] | null>(null);
+  const [trafficOn, setTrafficOn] = useState(showTraffic);
   const mapCenter: [number, number] = center ? [center.lat, center.lng] : DEFAULT_CENTER;
 
   const stableRouteKey = routePath
@@ -122,12 +140,33 @@ export default function BusMap({
         : undefined;
 
   return (
-    <div className={`rounded-xl overflow-hidden ${className}`} style={{ height }}>
+    <div className={`rounded-xl overflow-hidden relative ${className}`} style={{ height }}>
+      {/* Traffic toggle button */}
+      <button
+        onClick={() => setTrafficOn((v) => !v)}
+        className={`absolute top-3 right-3 z-[1000] px-3 py-1.5 rounded-lg text-xs font-medium shadow-md border transition-colors ${
+          trafficOn
+            ? "bg-destructive text-destructive-foreground border-destructive"
+            : "bg-background text-foreground border-border hover:bg-accent"
+        }`}
+      >
+        {trafficOn ? "🚦 Traffic ON" : "🚦 Traffic OFF"}
+      </button>
+
+      {trafficOn && <TrafficLegend />}
+
       <MapContainer center={mapCenter} zoom={zoom} style={{ width: "100%", height: "100%" }} scrollWheelZoom attributionControl={false}>
         <TileLayer
           url={`https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_KEY}`}
           attribution='&copy; <a href="https://www.geoapify.com/">Geoapify</a>'
         />
+        {trafficOn && (
+          <TileLayer
+            url={`https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${TOMTOM_KEY}&tileSize=256`}
+            attribution='&copy; TomTom'
+            opacity={0.7}
+          />
+        )}
         <FitBounds markers={markers} routePath={displayPath} />
         {onMapClick && <ClickHandler onClick={onMapClick} />}
         {markers.map((m) => (
