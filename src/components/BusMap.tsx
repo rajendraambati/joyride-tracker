@@ -4,7 +4,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 const GEOAPIFY_KEY = "2c02f2a1336a49c193fb75f1ff86f803";
-const TOMTOM_KEY = "jMFAMQfjG2gG6G2aHGA6YaMG2GzfpAbj";
+const TOMTOM_KEY = "yFgRWKwYiQQMNOG9tXkVzIUYzkgq9hWo";
 const DEFAULT_CENTER: [number, number] = [12.9416, 77.62];
 
 export interface BusMarker {
@@ -103,29 +103,32 @@ export default function BusMap({
       setRouteLine(null);
       return;
     }
-    const waypoints = routePath.map((p) => `${p.lat},${p.lng}`).join("|");
-    const url = `https://api.geoapify.com/v1/routing?waypoints=${encodeURIComponent(waypoints)}&mode=drive&apiKey=${GEOAPIFY_KEY}`;
+    const locations = routePath.map((p) => `${p.lat},${p.lng}`).join(":");
+    const url = `https://api.tomtom.com/routing/1/calculateRoute/${locations}/json?key=${TOMTOM_KEY}&traffic=true&travelMode=car`;
 
     fetch(url)
       .then((r) => r.json())
       .then((data) => {
-        if (data.features && data.features.length > 0) {
-          const feature = data.features[0];
-          const coords: [number, number][] = feature.geometry.coordinates
-            .flat(feature.geometry.type === "MultiLineString" ? 1 : 0)
-            .map((c: number[]) => [c[1], c[0]] as [number, number]);
+        if (data.routes && data.routes.length > 0) {
+          const route = data.routes[0];
+          const coords: [number, number][] = route.legs.flatMap((leg: any) =>
+            leg.points.map((p: any) => [p.latitude, p.longitude] as [number, number])
+          );
           setRouteLine(coords);
           if (onRouteInfo) {
-            const props = feature.properties;
-            const steps: RouteInfo["steps"] = [];
-            if (props.legs) {
-              for (const leg of props.legs) {
-                for (const step of leg.steps ?? []) {
-                  steps.push({ instruction: step.instruction?.text ?? "", distance: step.distance ?? 0, duration: step.time ?? 0 });
-                }
-              }
-            }
-            onRouteInfo({ distance: props.distance ?? 0, duration: props.time ?? 0, steps });
+            const summary = route.summary;
+            const steps: RouteInfo["steps"] = route.legs.flatMap((leg: any) =>
+              (leg.steps ?? []).map((step: any) => ({
+                instruction: step.instruction?.text ?? step.maneuver ?? "",
+                distance: step.travelDistanceInMeters ?? 0,
+                duration: step.travelTimeInSeconds ?? 0,
+              }))
+            );
+            onRouteInfo({
+              distance: summary.lengthInMeters ?? 0,
+              duration: summary.travelTimeInSeconds ?? 0,
+              steps,
+            });
           }
         }
       })
